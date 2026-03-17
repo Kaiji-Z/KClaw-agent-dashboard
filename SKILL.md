@@ -1,11 +1,11 @@
 ---
-name: agent-dashboard-integration
-description: Guide agents to integrate and use the Agent Dashboard for monitoring their status. Use when users want to set up an Agent monitoring dashboard, view real-time agent status, or deploy a dashboard for their OpenClaw setup.
+name: kclaw-dashboard-integration
+description: Guide agents to integrate and use the KClaw Agent Dashboard for monitoring their status. Use when users want to set up an Agent monitoring dashboard, view real-time agent status, or deploy a dashboard for their KClaw setup.
 ---
 
-# Agent Dashboard 集成指南
+# KClaw Agent Dashboard 集成指南
 
-这个 skill 帮助你在自己的 Agent workspace 中集成 Agent Dashboard，用于监控 Agent 的实时状态。
+这个 skill 帮助你在自己的 Agent workspace 中集成 KClaw Agent Dashboard，用于监控 Agent 的实时状态。
 
 ## 快速集成
 
@@ -13,10 +13,10 @@ description: Guide agents to integrate and use the Agent Dashboard for monitorin
 
 ```bash
 # 复制整个 dashboard 项目到你的 workspace
-cp -r /path/to/agent-dashboard-general ~/.openclaw/workspace/skills/agent-dashboard
+cp -r /path/to/KClaw-AgentDashboard ~/.kclaw/workspace/skills/kclaw-dashboard
 
 # 启动 dashboard
-cd ~/.openclaw/workspace/skills/agent-dashboard
+cd ~/.kclaw/workspace/skills/kclaw-dashboard
 node server.js
 ```
 
@@ -26,10 +26,10 @@ node server.js
 
 ```bash
 # 创建软链接，方便后续更新
-ln -s /path/to/agent-dashboard-general ~/.openclaw/workspace/skills/agent-dashboard
+ln -s /path/to/KClaw-AgentDashboard ~/.kclaw/workspace/skills/kclaw-dashboard
 
 # 启动
-cd ~/.openclaw/workspace/skills/agent-dashboard
+cd ~/.kclaw/workspace/skills/kclaw-dashboard
 node server.js
 ```
 
@@ -96,14 +96,14 @@ node server.js
 npm install -g pm2
 
 # 启动
-pm2 start server.js --name agent-dashboard
+pm2 start server.js --name kclaw-dashboard
 
 # 查看状态
-pm2 status agent-dashboard
+pm2 status kclaw-dashboard
 
 # 停止/重启
-pm2 stop agent-dashboard
-pm2 restart agent-dashboard
+pm2 stop kclaw-dashboard
+pm2 restart kclaw-dashboard
 
 # 开机自启
 pm2 save
@@ -111,6 +111,8 @@ pm2 startup
 ```
 
 ## 故障排查
+
+```
 
 ### 无法连接 Gateway
 

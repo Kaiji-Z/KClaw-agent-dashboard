@@ -1,4 +1,4 @@
-# Agent Dashboard - 通用版本
+# KClaw Agent Dashboard
 
 一个通用的 OpenClaw Agent 状态仪表盘，可以监控多个 Agent 的实时状态。
 
@@ -18,7 +18,7 @@
 
 ### 方法一：直接启动
 ```bash
-cd agent-dashboard-general
+cd KClaw-AgentDashboard
 node server.js
 ```
 访问: http://localhost:3456/
@@ -34,7 +34,7 @@ node server.js
 ### 方法三：PM2 托管（推荐生产环境）
 ```bash
 npm install -g pm2
-pm2 start server.js --name agent-dashboard
+pm2 start server.js --name kclaw-dashboard
 pm2 save
 pm2 startup
 ```
@@ -54,7 +54,7 @@ pm2 startup
 
 ## 文件结构
 ```
-agent-dashboard-general/
+KClaw-AgentDashboard/
 ├── AGENT.md       # Agent 使用指南
 ├── SKILL.md       # 集成 skill
 ├── config.json5   # 配置文件

@@ -1,5 +1,5 @@
 /**
- * Agent Dashboard - 通用版本
+ * KClaw Agent Dashboard
  * 
  * 功能：
  * - 自动从 ~/.openclaw/openclaw.json 读取 Gateway 端口和 Token

@@ -1,11 +1,11 @@
-# AGENT.md - Agent Dashboard 使用指南
+# AGENT.md - KClaw Agent Dashboard 使用指南
 
 这是一个通用的 OpenClaw Agent 状态仪表盘，用于监控多个 Agent 的实时状态。
 
 ## 快速启动
 
 ```bash
-cd /path/to/agent-dashboard-general
+cd /path/to/KClaw-AgentDashboard
 node server.js
 ```
 
@@ -13,7 +13,7 @@ node server.js
 
 ## 配置文件
 
-编辑 `config.json5` 自定义参数：
+编辑 `config.json5` 自定义参数:
 
 ```json
 {
@@ -48,7 +48,7 @@ node server.js
 
 ## 功能说明
 
-- **自动配置**: 从 `~/.openclaw/openclaw.json` 自动读取 Gateway 端口和 Token
+- **自动配置**: 从 `~/.kclaw/kclaw.json` 自动读取 Gateway 端口和 Token
 - **多语言**: 支持中英文界面
 - **状态监控**: 空闲/活跃/思考中/调用工具
 - **历史记录**: 保留 30 分钟内活跃过的 Agent
@@ -56,7 +56,7 @@ node server.js
 ## PM2 托管
 
 ```bash
-pm2 start server.js --name agent-dashboard
+pm2 start server.js --name kclaw-dashboard
 pm2 save
 pm2 startup
 ```

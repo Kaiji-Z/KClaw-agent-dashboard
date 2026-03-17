@@ -3,39 +3,89 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Agent Dashboard</title>
+    <title>KClaw Agent Dashboard</title>
   <meta name="theme-color" content="#0d1117">
   <style>
+    :root {
+      /* Colors */
+      --bg-primary: #0d1117;
+      --bg-secondary: #161b22;
+      --bg-tertiary: #21262d;
+      --text-primary: #e6edf3;
+      --text-secondary: #c9d1d9;
+      --text-muted: #8b949e;
+      --accent-blue: #58a6ff;
+      --accent-green: #238636;
+      --accent-green-bright: #3fb950;
+      --accent-yellow: #d29922;
+      --accent-red: #da3633;
+      --accent-red-bright: #f85149;
+      --border-default: #30363d;
+      --border-muted: #21262d;
+
+      /* Token thresholds - USER SPECIFIED */
+      --token-warning: #d29922;
+      --token-critical: #f85149;
+
+      /* Spacing */
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 12px;
+      --space-lg: 16px;
+      --space-xl: 20px;
+      --space-2xl: 24px;
+
+      /* Typography */
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'SF Mono', Consolas, 'Liberation Mono', monospace;
+
+      /* Shadows */
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+      --shadow-glow-green: 0 0 20px rgba(35,134,54,0.2);
+      --shadow-glow-yellow: 0 0 20px rgba(210,153,34,0.2);
+      --shadow-glow-blue: 0 0 20px rgba(56,139,253,0.2);
+
+      /* Border radius */
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-full: 9999px;
+
+      /* Animation */
+      --transition-fast: 150ms ease;
+      --transition-normal: 300ms ease;
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #0d1117;
-      color: #c9d1d9;
+      font-family: var(--font-sans);
+      background: var(--bg-primary);
+      color: var(--text-secondary);
       min-height: 100vh;
-      padding: 12px;
+      padding: var(--space-md);
     }
-    @media (min-width: 768px) { body { padding: 20px; } }
+    @media (min-width: 768px) { body { padding: var(--space-xl); } }
     .header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       max-width: 1400px;
-      margin: 0 auto 20px;
+      margin: 0 auto var(--space-xl);
     }
-    h1 { font-size: 1.1rem; color: #58a6ff; }
+    h1 { font-size: 1.1rem; color: var(--accent-blue); }
     @media (min-width: 500px) { h1 { font-size: 1.5rem; } }
-    .connection-status { display: flex; align-items: center; gap: 8px; }
+    .connection-status { display: flex; align-items: center; gap: var(--space-sm); }
     .status-dot {
       width: 10px; height: 10px;
       border-radius: 50%;
-      background: #da3633;
+      background: var(--accent-red);
       animation: pulse 2s infinite;
     }
-    .status-dot.connected { background: #238636; }
+    .status-dot.connected { background: var(--accent-green); }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     .status-badge { padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; }
-    .status-badge.connected { background: #238636; color: #fff; }
-    .status-badge.disconnected { background: #da3633; color: #fff; }
+    .status-badge.connected { background: var(--accent-green); color: #fff; }
+    .status-badge.disconnected { background: var(--accent-red); color: #fff; }
     
     .login-screen {
       position: fixed; inset: 0;
@@ -43,41 +93,401 @@
       display: flex; align-items: center; justify-content: center;
       z-index: 100;
     }
-    .login-box {
-      background: #161b22;
-      padding: 24px;
-      border-radius: 12px;
-      border: 1px solid #30363d;
+        .login-box {
+      background: var(--bg-secondary);
+      padding: var(--space-2xl);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-default);
       text-align: center;
       width: 90%;
       max-width: 360px;
     }
     @media (min-width: 500px) { .login-box { padding: 40px; } }
-    .login-box h2 { margin-bottom: 8px; color: #fff; }
-    .login-box p { color: #8b949e; margin-bottom: 20px; font-size: 0.9rem; }
+    .login-box h2 { margin-bottom: var(--space-sm); color: var(--text-primary); }
+    .login-box p { color: var(--text-muted); margin-bottom: var(--space-lg); font-size: 0.9rem; }
     .login-box input {
       width: 100%;
-      padding: 12px;
-      border: 1px solid #30363d;
-      border-radius: 6px;
-      background: #0d1117;
-      color: #c9d1d9;
+      padding: var(--space-md);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-sm);
+      background: var(--bg-primary);
+      color: var(--text-secondary);
       font-size: 1rem;
-      margin-bottom: 15px;
+      margin-bottom: var(--space-md);
+    }
+    .login-box input:focus {
+      border-color: var(--accent-blue);
+      outline: none;
     }
     .login-box button {
       width: 100%;
-      padding: 12px;
+      padding: var(--space-md);
       border: none;
-      border-radius: 6px;
-      background: #238636;
+      border-radius: var(--radius-sm);
+      background: var(--accent-green);
       color: #fff;
       font-size: 1rem;
       cursor: pointer;
+      transition: background var(--transition-fast);
     }
-    .login-box button:hover { background: #2ea043; }
-    .login-box .error { color: #f85149; margin-top: 10px; font-size: 0.85rem; }
+    .login-box button:hover { background: var(--accent-green-bright); }
+    .login-box button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .login-box .error { color: var(--accent-red-bright); margin-top: var(--space-sm); font-size: 0.85rem; }
     .hidden { display: none !important; }
+
+    /* Skeleton Loading */
+    .skeleton {
+      background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s infinite;
+      border-radius: var(--radius-sm);
+    }
+    @keyframes skeleton-loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .skeleton-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      padding: var(--space-lg);
+    }
+    .skeleton-avatar { 
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-full);
+      background: var(--bg-tertiary);
+    }
+    .skeleton-text { 
+      height: 14px;
+      margin: var(--space-xs) 0;
+      border-radius: var(--radius-sm);
+      background: var(--bg-tertiary);
+    }
+    .skeleton-text-sm { 
+      height: 10px;
+      width: 60%;
+      border-radius: var(--radius-sm);
+      background: var(--bg-tertiary);
+    }
+    .skeleton-stat { 
+      height: 60px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-tertiary);
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: var(--space-2xl) var(--space-xl);
+      grid-column: 1 / -1;
+    }
+    .empty-icon {
+      font-size: 4rem;
+      opacity: 0.5;
+      margin-bottom: var(--space-lg);
+      animation: empty-float 2s ease-in-out infinite;
+    }
+    @keyframes empty-float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .empty-title {
+      font-size: 1.2rem;
+      color: var(--text-primary);
+      margin-bottom: var(--space-sm);
+    }
+    .empty-description {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      max-width: 300px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+
+    /* Token progress bar */
+    .token-bar-container {
+      margin-top: var(--space-sm);
+    }
+    .token-bar {
+      height: 6px;
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+    }
+    .token-bar-fill {
+      height: 100%;
+      border-radius: var(--radius-full);
+      transition: width var(--transition-normal), background var(--transition-fast);
+    }
+    .token-bar-fill.normal { background: var(--accent-green); }
+    .token-bar-fill.warning { background: var(--token-warning); }
+    .token-bar-fill.critical { background: var(--token-critical); }
+    .token-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: var(--space-xs);
+    }
+    .token-value.warning { color: var(--token-warning); }
+    .token-value.critical { color: var(--token-critical); font-weight: 600; }
+
+    /* Header enhancements */
+    .header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-md);
+      max-width: 1400px;
+      margin: 0 auto var(--space-xl);
+      padding-bottom: var(--space-md);
+      border-bottom: 1px solid var(--border-muted);
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+    .brand-icon {
+      font-size: 1.8rem;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+    .header-btn {
+      padding: var(--space-sm) var(--space-md);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      font-size: 0.9rem;
+      min-width: 36px;
+      min-height: 36px;
+    }
+    @media (min-width: 500px) {
+      .header-btn {
+        min-width: 44px;
+        min-height: 44px;
+      }
+    }
+    .header-btn:hover {
+      background: var(--bg-secondary);
+      border-color: var(--accent-blue);
+    }
+    .header-btn.loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    .header-btn .btn-icon {
+      font-size: 1.1rem;
+    }
+    .header-btn.active {
+      background: rgba(35,134,54,0.2);
+      border-color: var(--accent-green);
+    }
+
+    /* Search input */
+    .search-container {
+      position: relative;
+      flex: 1;
+      max-width: 300px;
+      margin: 0 var(--space-md);
+    }
+    .search-container input {
+      width: 100%;
+      padding: var(--space-sm) var(--space-lg);
+      padding-left: 36px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-size: 0.9rem;
+    }
+    @media (min-width: 500px) {
+      .search-container input {
+        font-size: 16px;
+      }
+    }
+    .search-container input:focus {
+      border-color: var(--accent-blue);
+      outline: none;
+    }
+    .search-container input::placeholder {
+      color: var(--text-muted);
+    }
+    .search-icon {
+      position: absolute;
+      left: var(--space-sm);
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+    .search-clear {
+      position: absolute;
+      right: var(--space-sm);
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      font-size: 1rem;
+    }
+    .search-clear:hover {
+      color: var(--text-primary);
+    }
+
+    /* Activity timeline */
+    .timeline {
+      display: flex;
+      gap: var(--space-xs);
+      overflow-x: auto;
+      padding: var(--space-xs) 0;
+      margin-top: var(--space-sm);
+      -webkit-overflow-scrolling: touch;
+    }
+    .timeline-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      padding: var(--space-xs) var(--space-sm);
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-sm);
+      white-space: nowrap;
+      font-size: 0.7rem;
+    }
+    .timeline-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+    .timeline-item.active .timeline-dot { background: var(--accent-green); }
+    .timeline-item.thinking .timeline-dot { background: var(--accent-yellow); }
+    .timeline-item.tool .timeline-dot { background: var(--accent-blue); }
+    .timeline-item.idle .timeline-dot { background: var(--text-muted); }
+    .timeline-time {
+      color: var(--text-muted);
+    }
+    .timeline-label {
+      color: var(--text-secondary);
+    }
+
+    /* Settings modal */
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal.hidden {
+      display: none;
+    }
+    .modal-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+    }
+    .modal-content {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      padding: var(--space-xl);
+      max-width: 400px;
+      width: 90%;
+      border: 1px solid var(--border-default);
+      position: relative;
+    }
+    .modal-content h3 {
+      margin-bottom: var(--space-lg);
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+    .form-group {
+      margin-bottom: var(--space-lg);
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: var(--space-xs);
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+    }
+    .form-group select {
+      width: 100%;
+      padding: var(--space-sm);
+      background: var(--bg-primary);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-size: 0.9rem;
+    }
+    .form-group select:focus {
+      border-color: var(--accent-blue);
+      outline: none;
+    }
+    .modal-actions {
+      display: flex;
+      gap: var(--space-sm);
+      justify-content: flex-end;
+      margin-top: var(--space-lg);
+    }
+    .btn-secondary {
+      padding: var(--space-sm) var(--space-md);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .btn-secondary:hover {
+      background: var(--bg-secondary);
+    }
+    .btn-primary {
+      padding: var(--space-sm) var(--space-md);
+      background: var(--accent-green);
+      border: none;
+      border-radius: var(--radius-sm);
+      color: #fff;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .btn-primary:hover {
+      background: var(--accent-green-bright);
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 500px) {
+      .header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .header-left, .header-right {
+        justify-content: center;
+      }
+      .search-container {
+        max-width: 100%;
+        margin: var(--space-sm) 0;
+      }
+    }
 
     .agents-grid {
       display: grid;
@@ -190,24 +600,117 @@
   </div>
 
   <div class="header">
-    <h1>🤖 <span id="page-title">Agent 状态仪表盘</span> <span style="font-size:0.7rem;color:#8b949e" id="version">v3 通用版</span></h1>
-    <div class="connection-status">
-      <div id="status-dot" class="status-dot"></div>
-      <div id="status-badge" class="status-badge disconnected" id="status-text">未连接</div>
+    <div class="header-left">
+      <div class="brand">
+        <span class="brand-icon">🤖</span>
+        <div>
+          <h1 id="page-title">KClaw Agent Dashboard</h1>
+          <span style="font-size:0.7rem;color:var(--text-muted)" id="version">v1.0</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="search-container">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search-input" placeholder="搜索 Agent..." oninput="handleSearch(event)">
+      <button class="search-clear hidden" onclick="clearSearch()">✕</button>
+    </div>
+    
+    <div class="header-right">
+      <button class="header-btn" id="refresh-btn" onclick="manualRefresh()" title="刷新">
+        <span class="btn-icon">🔄</span>
+      </button>
+      <button class="header-btn active" id="auto-refresh-btn" onclick="toggleAutoRefresh()" title="自动刷新">
+        <span class="btn-icon">⏱</span>
+      </button>
+      <button class="header-btn" id="settings-btn" onclick="openSettings()" title="设置">
+        <span class="btn-icon">⚙️</span>
+      </button>
+      <div class="connection-status">
+        <div id="status-dot" class="status-dot"></div>
+        <div id="status-badge" class="status-badge disconnected">未连接</div>
+      </div>
     </div>
   </div>
 
   <div id="agents-grid" class="agents-grid">
-    <div class="empty-state" id="loading-text">正在加载...</div>
+    <div class="empty-state">
+      <div class="empty-icon">⏳</div>
+      <div class="empty-title" id="loading-text">正在加载...</div>
+    </div>
   </div>
 
   <div class="last-update"><span id="last-update-label">最后更新</span>: <span id="last-time">--</span></div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal hidden">
+    <div class="modal-overlay" onclick="closeSettings()"></div>
+    <div class="modal-content">
+      <h3>⚙️ <span id="settings-title">设置</span></h3>
+      <div class="form-group">
+        <label for="pref-language"><span id="lang-label">语言</span></label>
+        <select id="pref-language">
+          <option value="zh-CN">中文</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="pref-refresh"><span id="refresh-label">刷新间隔</span></label>
+        <select id="pref-refresh">
+          <option value="1000">1s</option>
+          <option value="1500">1.5s</option>
+          <option value="2000">2s</option>
+          <option value="3000">3s</option>
+          <option value="5000">5s</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeSettings()"><span id="cancel-btn">取消</span></button>
+        <button class="btn-primary" onclick="applySettings()"><span id="apply-btn">应用</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal hidden">
+    <div class="modal-overlay" onclick="closeSettings()"></div>
+    <div class="modal-content">
+      <h3>⚙️ <span id="settings-title">设置</span></h3>
+      <div class="form-group">
+        <label for="pref-language"><span id="lang-label">语言</span></label>
+        <select id="pref-language">
+          <option value="zh-CN">中文</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="pref-refresh"><span id="refresh-label">刷新间隔</span></label>
+        <select id="pref-refresh">
+          <option value="1000">1s</option>
+          <option value="1500">1.5s</option>
+          <option value="2000">2s</option>
+          <option value="3000">3s</option>
+          <option value="5000">5s</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeSettings()"><span id="cancel-btn">取消</span></button>
+        <button class="btn-primary" onclick="applySettings()"><span id="apply-btn">应用</span></button>
+      </div>
+    </div>
+  </div>
 
   <script>
     // 从服务器获取配置
     let APP_CONFIG = { refreshInterval: 1500, language: 'zh-CN', agents: {} };
     let token = localStorage.getItem('gateway_token') || '';
     let pollTimer = null;
+let searchQuery = '';
+let cachedResults = [];
+
+    // Refresh control state
+    let isRefreshing = false;
+    let autoRefreshEnabled = true;
     
     // 历史记录（保留 30 分钟）
     const AGENT_HISTORY_TTL = 30 * 60 * 1000;
@@ -227,6 +730,12 @@
 
     // 初始化
     async function init() {
+      // Load auto-refresh preference from localStorage
+      const storedAutoRefresh = localStorage.getItem('auto_refresh');
+      if (storedAutoRefresh !== null) {
+        autoRefreshEnabled = storedAutoRefresh === 'true';
+      }
+      
       // 获取服务器配置
       try {
         const res = await fetch('/api/config');
@@ -387,7 +896,8 @@
         return timeB - timeA;
       });
       
-      renderAgents(results);
+      cachedResults = results;
+      filterAndRenderAgents();
     }
 
     function renderAgents(results) {
@@ -435,6 +945,7 @@
               <div class="stat-label">${isEn ? 'Last Active' : '最后活跃'}</div>
             </div>
           </div>
+          ${renderTokenBar(latest.totalTokens)}
           ${status.task && isActive ? `
           <div class="thinking-box">
             <div class="thinking-label">${status.taskLabel}</div>
@@ -474,6 +985,50 @@
       const icon = icons[channel] || '📡';
       const typeLabel = chatType === 'direct' ? (isEn ? 'DM' : '私信') : (chatType === 'group' ? (isEn ? 'Group' : '群聊') : '');
       return `<span class="icon">${icon}</span> ${channel}${typeLabel ? ` · ${typeLabel}` : ''}`;
+    }
+
+    function handleSearch(e) {
+      searchQuery = e.target.value.toLowerCase().trim();
+      // Show/hide clear button
+      const clearBtn = document.querySelector('.search-clear');
+      if (clearBtn) {
+        clearBtn.classList.toggle('hidden', !searchQuery);
+      }
+      filterAndRenderAgents();
+    }
+
+    function clearSearch() {
+      searchQuery = '';
+      document.getElementById('search-input').value = '';
+      const clearBtn = document.querySelector('.search-clear');
+      if (clearBtn) clearBtn.classList.add('hidden');
+      filterAndRenderAgents();
+    }
+
+    function filterAgents(agents) {
+      if (!searchQuery) return agents;
+      return agents.filter(agent => {
+        const agentConfig = APP_CONFIG.agents?.[agent.agentId] || {};
+        const name = (agentConfig.name || agent.agentId).toLowerCase();
+        const status = analyzeStatus(agent.latest, APP_CONFIG.language === 'en').text.toLowerCase();
+        const channel = formatChannel(agent.latest, APP_CONFIG.language === 'en') || '';
+        
+        return name.includes(searchQuery) || 
+               status.includes(searchQuery) || 
+               channel.toLowerCase().includes(searchQuery);
+      });
+    }
+
+    function filterAndRenderAgents() {
+      const filtered = filterAgents(cachedResults);
+      if (filtered.length === 0 && cachedResults.length > 0) {
+        // Show no-results empty state
+        const grid = document.getElementById('agents-grid');
+        const isEn = APP_CONFIG.language === 'en';
+        grid.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">${isEn ? 'No Results' : '未找到结果'}</div><div class="empty-description">${isEn ? 'Try adjusting your search query.' : '请尝试调整搜索条件。'}</div></div>`;
+      } else {
+        renderAgents(filtered);
+      }
     }
 
     function analyzeStatus(session, isEn) {
@@ -548,10 +1103,223 @@
       return String(n);
     }
 
+    // Token progress bar functions
+    const TOKEN_THRESHOLDS = {
+      WARNING: 100000,
+      CRITICAL: 150000,
+      MAX: 200000
+    };
+
+    function getTokenClass(tokens) {
+      if (!tokens) return 'normal';
+      if (tokens >= TOKEN_THRESHOLDS.CRITICAL) return 'critical';
+      if (tokens >= TOKEN_THRESHOLDS.WARNING) return 'warning';
+      return 'normal';
+    }
+
+    function renderTokenBar(tokens) {
+      if (!tokens) return '';
+      const percentage = Math.min((tokens / TOKEN_THRESHOLDS.MAX) * 100, 100);
+      const tokenClass = getTokenClass(tokens);
+      const isEn = APP_CONFIG.language === 'en';
+      const formatted = formatTokens(tokens);
+      
+      return `
+        <div class="token-bar-container">
+          <div class="token-bar">
+            <div class="token-bar-fill ${tokenClass}" style="width: ${percentage}%"></div>
+          </div>
+          <div class="token-info">
+            <span class="token-value ${tokenClass}">${formatted}</span>
+            <span>${isEn ? 'Threshold: 100K/150K' : '阈值: 100K/150K'}</span>
+          </div>
+        </div>
+      `;
+    }
+
     function showError(msg) {
       const el = document.getElementById('error');
       el.textContent = msg;
       el.classList.remove('hidden');
+    }
+
+    // Skeleton loading
+    function renderSkeletons(count = 3) {
+      const grid = document.getElementById('agents-grid');
+      grid.innerHTML = Array(count).fill(`
+        <div class="skeleton-card">
+          <div class="agent-header">
+            <div class="skeleton skeleton-avatar"></div>
+            <div style="flex:1">
+              <div class="skeleton skeleton-text" style="width:60%"></div>
+              <div class="skeleton skeleton-text-sm"></div>
+            </div>
+          </div>
+          <div class="stats">
+            <div class="skeleton skeleton-stat"></div>
+            <div class="skeleton skeleton-stat"></div>
+            <div class="skeleton skeleton-stat"></div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Token progress bar
+    const TOKEN_THRESHOLDS = {
+      WARNING: 100000,
+      CRITICAL: 150000
+      MAX: 200000
+    };
+
+    function getTokenClass(tokens) {
+      if (!tokens) return 'normal';
+      if (tokens >= TOKEN_THRESHOLDS.CRITICAL) return 'critical';
+      if (tokens >= TOKEN_THRESHOLDS.WARNING) return 'warning';
+      return 'normal';
+    }
+
+    function renderTokenBar(tokens) {
+      if (!tokens) return '';
+      const percentage = Math.min((tokens / TOKEN_THRESHOLDS.MAX) * 100, 100);
+      const tokenClass = getTokenClass(tokens);
+      const isEn = APP_CONFIG.language === 'en';
+      
+      return `
+        <div class="token-bar-container">
+          <div class="token-bar">
+            <div class="token-bar-fill ${tokenClass}" style="width: ${percentage}%"></div>
+          </div>
+          <div class="token-info">
+            <span class="token-value ${tokenClass}">${formatTokens(tokens)}</span>
+            <span>${isEn ? 'Threshold: 100K/150K' : '阈值: 100K/150K'}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    // Activity timeline
+    const TIMELINE_KEY = 'agent_dashboard_timeline';
+    const MAX_TIMELINE_EVENTS = 50;
+
+    function recordActivity(agentId, action) {
+      const timeline = loadTimeline();
+      const now = Date.now();
+      timeline.push({ agentId, action, timestamp: now });
+      if (timeline.length > MAX_TIMELINE_EVENTS) timeline.shift();
+      localStorage.setItem(TIMELINE_KEY, JSON.stringify(timeline));
+    }
+
+    function loadTimeline() {
+      try {
+        const data = localStorage.getItem(TIMELINE_KEY);
+        return data ? JSON.parse(data) : [];
+      } catch (e) { return []; }
+    }
+
+    function getAgentTimeline(agentId, limit = 10) {
+      return loadTimeline().filter(e => e.agentId === agentId).slice(-limit);
+    }
+
+    function renderTimeline(agentId) {
+      const events = getAgentTimeline(agentId);
+      if (events.length === 0) return '';
+      const isEn = APP_CONFIG.language === 'en';
+      const actionLabels = {
+        'active': isEn ? 'Active' : '活跃',
+        'thinking': isEn ? 'Think' : '思考',
+        'tool': isEn ? 'Tool' : '工具',
+        'idle': isEn ? 'Idle' : '空闲'
+      };
+      return `
+        <div class="timeline">
+          ${events.map(event => `
+            <div class="timeline-item ${event.action}">
+              <span class="timeline-dot"></span>
+              <span class="timeline-time">${new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <span class="timeline-label">${actionLabels[event.action]}</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    // Settings modal
+    function openSettings() {
+      const modal = document.getElementById('settings-modal');
+      modal.classList.remove('hidden');
+      document.getElementById('pref-language').value = APP_CONFIG.language || 'zh-CN';
+      document.getElementById('pref-refresh').value = getRefreshInterval();
+    }
+
+    function closeSettings() {
+      document.getElementById('settings-modal').classList.add('hidden');
+    }
+
+    function applySettings() {
+      const lang = document.getElementById('pref-language').value;
+      const interval = parseInt(document.getElementById('pref-refresh').value, 10);
+      localStorage.setItem('refresh_interval', interval);
+      if (lang !== APP_CONFIG.language) {
+        localStorage.setItem('dashboard_language', lang);
+        APP_CONFIG.language = lang;
+        updateLanguage();
+      }
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = setInterval(refreshData, interval);
+      }
+      closeSettings();
+    }
+
+    // Manual refresh function
+    async function manualRefresh() {
+      if (isRefreshing) return;
+      isRefreshing = true;
+      updateRefreshButton(true);
+      try {
+        await refreshData();
+      } finally {
+        isRefreshing = false;
+        updateRefreshButton(false);
+      }
+    }
+
+    // Update refresh button state
+    function updateRefreshButton(loading) {
+      const btn = document.getElementById('refresh-btn');
+      if (!btn) return;
+      btn.classList.toggle('loading', loading);
+      const icon = btn.querySelector('.btn-icon');
+      if (icon) {
+        icon.textContent = loading ? '⏳' : '🔄';
+      }
+    }
+
+    // Toggle auto-refresh
+    function toggleAutoRefresh() {
+      autoRefreshEnabled = !autoRefreshEnabled;
+      if (autoRefreshEnabled) {
+        pollTimer = setInterval(refreshData, getRefreshInterval());
+      } else {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+      updateAutoRefreshButton();
+      localStorage.setItem('auto_refresh', autoRefreshEnabled);
+    }
+
+    // Update auto-refresh button
+    function updateAutoRefreshButton() {
+      const btn = document.getElementById('auto-refresh-btn');
+      if (!btn) return;
+      btn.classList.toggle('active', autoRefreshEnabled);
+    }
+
+    // Get refresh interval from localStorage or config
+    function getRefreshInterval() {
+      const stored = localStorage.getItem('refresh_interval');
+      if (stored) return parseInt(stored, 10);
+      return APP_CONFIG.refreshInterval || 1500;
     }
 
     init();
