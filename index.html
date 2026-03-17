@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Agent Dashboard</title>
+  <meta name="theme-color" content="#0d1117">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+      min-height: 100vh;
+      padding: 12px;
+    }
+    @media (min-width: 768px) { body { padding: 20px; } }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 1400px;
+      margin: 0 auto 20px;
+    }
+    h1 { font-size: 1.1rem; color: #58a6ff; }
+    @media (min-width: 500px) { h1 { font-size: 1.5rem; } }
+    .connection-status { display: flex; align-items: center; gap: 8px; }
+    .status-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #da3633;
+      animation: pulse 2s infinite;
+    }
+    .status-dot.connected { background: #238636; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .status-badge { padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; }
+    .status-badge.connected { background: #238636; color: #fff; }
+    .status-badge.disconnected { background: #da3633; color: #fff; }
+    
+    .login-screen {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.8);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100;
+    }
+    .login-box {
+      background: #161b22;
+      padding: 24px;
+      border-radius: 12px;
+      border: 1px solid #30363d;
+      text-align: center;
+      width: 90%;
+      max-width: 360px;
+    }
+    @media (min-width: 500px) { .login-box { padding: 40px; } }
+    .login-box h2 { margin-bottom: 8px; color: #fff; }
+    .login-box p { color: #8b949e; margin-bottom: 20px; font-size: 0.9rem; }
+    .login-box input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      background: #0d1117;
+      color: #c9d1d9;
+      font-size: 1rem;
+      margin-bottom: 15px;
+    }
+    .login-box button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      background: #238636;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    .login-box button:hover { background: #2ea043; }
+    .login-box .error { color: #f85149; margin-top: 10px; font-size: 0.85rem; }
+    .hidden { display: none !important; }
+
+    .agents-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    @media (min-width: 500px) {
+      .agents-grid { grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 16px; }
+    }
+    
+    .agent-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 14px;
+      transition: all 0.3s;
+    }
+    @media (min-width: 500px) { .agent-card { padding: 20px; } }
+    .agent-card.active { border-color: #238636; box-shadow: 0 0 20px rgba(35,134,54,0.2); }
+    .agent-card.thinking { border-color: #d29922; box-shadow: 0 0 20px rgba(210,153,34,0.2); }
+    .agent-card.tool { border-color: #388bfd; box-shadow: 0 0 20px rgba(56,139,253,0.2); }
+    .agent-card.idle { opacity: 0.6; border-color: #30363d; }
+    .agent-card.idle:hover { opacity: 0.8; }
+    
+    .agent-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+    @media (min-width: 500px) { .agent-header { gap: 12px; margin-bottom: 16px; } }
+    .agent-emoji { font-size: 1.5rem; }
+    @media (min-width: 500px) { .agent-emoji { font-size: 2rem; } }
+    .agent-info { flex: 1; min-width: 0; }
+    .agent-name { font-size: 1rem; font-weight: 600; color: #fff; }
+    .agent-model { font-size: 0.75rem; color: #8b949e; }
+    @media (min-width: 500px) { .agent-name { font-size: 1.1rem; } .agent-model { font-size: 0.8rem; } }
+    
+    .status-tag {
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    @media (min-width: 500px) { .status-tag { padding: 4px 10px; font-size: 0.75rem; } }
+    .status-tag.idle { background: #21262d; color: #8b949e; }
+    .status-tag.thinking { background: rgba(210,153,34,0.2); color: #d29922; animation: pulse 1s infinite; }
+    .status-tag.tool { background: rgba(56,139,253,0.2); color: #388bfd; }
+    .status-tag.active { background: rgba(35,134,54,0.2); color: #3fb950; }
+    
+    .channel-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      color: #8b949e;
+      background: #21262d;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-top: 4px;
+    }
+    .channel-badge .icon { font-size: 0.7rem; }
+    
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+    @media (min-width: 500px) { .stats { gap: 12px; margin-bottom: 16px; } }
+    .stat { background: #21262d; padding: 8px; border-radius: 6px; text-align: center; }
+    @media (min-width: 500px) { .stat { padding: 10px; } }
+    .stat-value { font-size: 1rem; font-weight: 600; color: #fff; }
+    .stat-label { font-size: 0.65rem; color: #8b949e; }
+    @media (min-width: 500px) { .stat-value { font-size: 1.1rem; } .stat-label { font-size: 0.7rem; } }
+    
+    .thinking-box {
+      background: #21262d;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    @media (min-width: 500px) { .thinking-box { padding: 12px; font-size: 0.85rem; max-height: 200px; } }
+    .thinking-label { color: #d29922; font-size: 0.75rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+    .thinking-content { color: #c9d1d9; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+    .tool-badge {
+      display: inline-block;
+      background: rgba(56,139,253,0.15);
+      color: #58a6ff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.8rem;
+      margin: 2px;
+    }
+    
+    .empty-state { text-align: center; color: #8b949e; padding: 60px 20px; grid-column: 1 / -1; }
+    .last-update { text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 20px; }
+
+    .thinking-box::-webkit-scrollbar { width: 6px; }
+    .thinking-box::-webkit-scrollbar-track { background: #161b22; border-radius: 3px; }
+    .thinking-box::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+    .thinking-box::-webkit-scrollbar-thumb:hover { background: #484f58; }
+  </style>
+</head>
+<body>
+  <div id="login-screen" class="login-screen">
+    <div class="login-box">
+      <h2>🔐 <span id="login-title">连接 Gateway</span></h2>
+      <p id="login-hint">输入 Gateway Token 以连接</p>
+      <input type="password" id="token-input" placeholder="Token...">
+      <button id="connect-btn" onclick="connect()">连接</button>
+      <div id="error" class="error hidden"></div>
+    </div>
+  </div>
+
+  <div class="header">
+    <h1>🤖 <span id="page-title">Agent 状态仪表盘</span> <span style="font-size:0.7rem;color:#8b949e" id="version">v3 通用版</span></h1>
+    <div class="connection-status">
+      <div id="status-dot" class="status-dot"></div>
+      <div id="status-badge" class="status-badge disconnected" id="status-text">未连接</div>
+    </div>
+  </div>
+
+  <div id="agents-grid" class="agents-grid">
+    <div class="empty-state" id="loading-text">正在加载...</div>
+  </div>
+
+  <div class="last-update"><span id="last-update-label">最后更新</span>: <span id="last-time">--</span></div>
+
+  <script>
+    // 从服务器获取配置
+    let APP_CONFIG = { refreshInterval: 1500, language: 'zh-CN', agents: {} };
+    let token = localStorage.getItem('gateway_token') || '';
+    let pollTimer = null;
+    
+    // 历史记录（保留 30 分钟）
+    const AGENT_HISTORY_TTL = 30 * 60 * 1000;
+    const STORAGE_KEY = 'agent_dashboard_history';
+    let agentHistory = loadAgentHistory();
+    
+    function loadAgentHistory() {
+      try {
+        const data = localStorage.getItem(STORAGE_KEY);
+        return data ? new Map(JSON.parse(data)) : new Map();
+      } catch (e) { return new Map(); }
+    }
+    
+    function saveAgentHistory(history) {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify([...history])); } catch (e) {}
+    }
+
+    // 初始化
+    async function init() {
+      // 获取服务器配置
+      try {
+        const res = await fetch('/api/config');
+        APP_CONFIG = await res.json();
+        updateLanguage();
+      } catch (e) {}
+      
+      // 尝试自动获取 Token
+      try {
+        const res = await fetch('/api/auto-token');
+        const data = await res.json();
+        if (data.token) {
+          token = data.token;
+          document.getElementById('token-input').value = token;
+          localStorage.setItem('gateway_token', token);
+          await connect();
+          return;
+        }
+      } catch (e) {}
+    }
+    
+    function updateLanguage() {
+      const lang = APP_CONFIG.language || 'zh-CN';
+      const isEn = lang === 'en';
+      
+      document.getElementById('login-title').textContent = isEn ? 'Connect Gateway' : '连接 Gateway';
+      document.getElementById('login-hint').textContent = isEn ? 'Enter Gateway Token to connect' : '输入 Gateway Token 以连接';
+      document.getElementById('connect-btn').textContent = isEn ? 'Connect' : '连接';
+      document.getElementById('page-title').textContent = isEn ? 'Agent Dashboard' : 'Agent 状态仪表盘';
+      document.getElementById('version').textContent = isEn ? 'v3 Universal' : 'v3 通用版';
+      document.getElementById('loading-text').textContent = isEn ? 'Loading...' : '正在加载...';
+      document.getElementById('last-update-label').textContent = isEn ? 'Last update' : '最后更新';
+    }
+
+    async function connect() {
+      token = document.getElementById('token-input').value.trim();
+      if (!token) return showError(APP_CONFIG.language === 'en' ? 'Please enter Token' : '请输入 Token');
+      
+      localStorage.setItem('gateway_token', token);
+      
+      try {
+        const data = await fetchSessionsList();
+        if (data.error) return showError(data.error);
+        
+        document.getElementById('login-screen').classList.add('hidden');
+        setConnected(true);
+        
+        await refreshData();
+        pollTimer = setInterval(refreshData, APP_CONFIG.refreshInterval || 1500);
+      } catch (e) {
+        showError((APP_CONFIG.language === 'en' ? 'Connection failed: ' : '连接失败: ') + e.message);
+      }
+    }
+
+    function setConnected(connected) {
+      const dot = document.getElementById('status-dot');
+      const badge = document.getElementById('status-badge');
+      const isEn = APP_CONFIG.language === 'en';
+      if (connected) {
+        dot.classList.add('connected');
+        badge.className = 'status-badge connected';
+        badge.textContent = isEn ? 'Connected' : '已连接';
+      } else {
+        dot.classList.remove('connected');
+        badge.className = 'status-badge disconnected';
+        badge.textContent = isEn ? 'Disconnected' : '未连接';
+      }
+    }
+
+    async function fetchSessionsList() {
+      const res = await fetch('/api/tools/invoke', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ tool: 'sessions_list', args: { activeMinutes: 60, messageLimit: 1 } })
+      });
+      const data = await res.json();
+      
+      if (!data.ok) return { error: data.error?.message || (APP_CONFIG.language === 'en' ? 'Request failed' : '请求失败') };
+      
+      let sessions = data.result?.details?.sessions || data.result?.sessions || [];
+      
+      if (sessions.length === 0 && data.result?.content?.[0]?.text) {
+        try {
+          const parsed = JSON.parse(data.result.content[0].text);
+          sessions = parsed.sessions || [];
+        } catch (e) {}
+      }
+      
+      return { sessions };
+    }
+
+    async function fetchSessionHistory(sessionKey) {
+      try {
+        const res = await fetch('/api/tools/invoke', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ tool: 'sessions_history', args: { sessionKey, limit: 2 } })
+        });
+        const data = await res.json();
+        if (!data.ok) return [];
+        let messages = data.result?.messages || [];
+        if (data.result?.content?.[0]?.text) {
+          try {
+            const parsed = JSON.parse(data.result.content[0].text);
+            messages = parsed.messages || [];
+          } catch (e) {}
+        }
+        return messages;
+      } catch (e) { return []; }
+    }
+
+    async function refreshData() {
+      const data = await fetchSessionsList();
+      if (data.error) { console.error('Failed to fetch sessions:', data.error); return; }
+      
+      const sessions = data.sessions || [];
+      const now = Date.now();
+      
+      // 按 agent 分组
+      const agents = new Map();
+      sessions.forEach(s => {
+        const agentId = s.key.split(':')[1] || 'unknown';
+        if (!agents.has(agentId)) agents.set(agentId, []);
+        agents.get(agentId).push(s);
+      });
+      
+      // 获取历史
+      const historyPromises = [];
+      agents.forEach((sessions, agentId) => {
+        const latest = sessions.sort((a, b) => b.updatedAt - a.updatedAt)[0];
+        historyPromises.push(
+          fetchSessionHistory(latest.key).then(messages => {
+            latest.messages = messages;
+            agentHistory.set(agentId, { lastActive: now, data: { agentId, sessions, latest } });
+            return { agentId, sessions, latest, isActive: true };
+          })
+        );
+      });
+      
+      let results = await Promise.all(historyPromises);
+      
+      // 清理过期记录
+      for (const [agentId, record] of agentHistory) {
+        if (now - record.lastActive > AGENT_HISTORY_TTL) agentHistory.delete(agentId);
+      }
+      saveAgentHistory(agentHistory);
+      
+      // 添加不活跃的 agent
+      const activeAgentIds = new Set(results.map(r => r.agentId));
+      for (const [agentId, record] of agentHistory) {
+        if (!activeAgentIds.has(agentId)) results.push({ ...record.data, isActive: false });
+      }
+      
+      // 排序
+      results.sort((a, b) => {
+        const timeA = a.latest?.updatedAt || a.lastActive || 0;
+        const timeB = b.latest?.updatedAt || b.lastActive || 0;
+        return timeB - timeA;
+      });
+      
+      renderAgents(results);
+    }
+
+    function renderAgents(results) {
+      const grid = document.getElementById('agents-grid');
+      const isEn = APP_CONFIG.language === 'en';
+      
+      if (results.length === 0) {
+        grid.innerHTML = `<div class="empty-state">${isEn ? 'No active agents' : '暂无活跃的 Agent'}</div>`;
+        return;
+      }
+
+      grid.innerHTML = '';
+      results.forEach(({ agentId, sessions, latest, isActive }) => {
+        const agentConfig = APP_CONFIG.agents?.[agentId] || {};
+        const name = agentConfig.name || agentId;
+        const emoji = agentConfig.emoji || '🤖';
+        const status = analyzeStatus(latest, isEn);
+        const lastActive = latest?.updatedAt ? formatTimeAgo(latest.updatedAt, isEn) : '-';
+        const cardClass = isActive ? 'agent-card ' + status.class : 'agent-card idle';
+        const channelInfo = formatChannel(latest, isEn);
+        
+        const card = document.createElement('div');
+        card.className = cardClass;
+        card.innerHTML = `
+          <div class="agent-header">
+            <span class="agent-emoji">${emoji}</span>
+            <div class="agent-info">
+              <div class="agent-name">${name}</div>
+              <div class="agent-model">${latest.model || 'unknown'}</div>
+              ${channelInfo ? `<div class="channel-badge">${channelInfo}</div>` : ''}
+            </div>
+            <span class="status-tag ${isActive ? status.class : 'idle'}">${isActive ? status.text : (isEn ? 'Idle' : '空闲')}</span>
+          </div>
+          <div class="stats">
+            <div class="stat">
+              <div class="stat-value">${sessions.length}</div>
+              <div class="stat-label">${isEn ? 'Sessions' : '会话数'}</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value">${formatTokens(latest.totalTokens)}</div>
+              <div class="stat-label">Token</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value">${lastActive}</div>
+              <div class="stat-label">${isEn ? 'Last Active' : '最后活跃'}</div>
+            </div>
+          </div>
+          ${status.task && isActive ? `
+          <div class="thinking-box">
+            <div class="thinking-label">${status.taskLabel}</div>
+            <div class="thinking-content">${status.task}</div>
+          </div>
+          ` : ''}
+        `;
+        grid.appendChild(card);
+      });
+
+      document.getElementById('last-time').textContent = new Date().toLocaleTimeString();
+    }
+    
+    function formatTimeAgo(timestamp, isEn) {
+      const seconds = Math.floor((Date.now() - timestamp) / 1000);
+      if (seconds < 60) return isEn ? 'Just now' : '刚刚';
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 60) return `${minutes}${isEn ? ' min ago' : '分钟前'}`;
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return `${hours}${isEn ? 'h ago' : '小时前'}`;
+      const days = Math.floor(hours / 24);
+      return `${days}${isEn ? 'd ago' : '天前'}`;
+    }
+    
+    function formatChannel(session, isEn) {
+      if (!session) return null;
+      const channel = session.channel || session.provider || session.surface;
+      const chatType = session.chat_type || session.chatType;
+      if (!channel) return null;
+      
+      const icons = {
+        'webchat': '🌐', 'telegram': '📱', 'discord': '💬', 'feishu': '🪽',
+        'whatsapp': '📞', 'signal': '🔒', 'slack': '💼', 'irc': '📡',
+        'imessage': '💙', 'googlechat': '👥'
+      };
+      
+      const icon = icons[channel] || '📡';
+      const typeLabel = chatType === 'direct' ? (isEn ? 'DM' : '私信') : (chatType === 'group' ? (isEn ? 'Group' : '群聊') : '');
+      return `<span class="icon">${icon}</span> ${channel}${typeLabel ? ` · ${typeLabel}` : ''}`;
+    }
+
+    function analyzeStatus(session, isEn) {
+      const lastUpdate = session.updatedAt || 0;
+      const secondsAgo = (Date.now() - lastUpdate) / 1000;
+      const messages = session.messages || [];
+      const lastAssistant = messages.find(m => m.role === 'assistant');
+      const lastUser = messages.find(m => m.role === 'user');
+
+      if (lastAssistant?.stopReason === 'stop') {
+        if (secondsAgo > 600) return { class: 'idle', text: isEn ? 'Idle' : '空闲' };
+        if (secondsAgo > 300) return { class: 'active', text: isEn ? 'Maybe idle' : '可能空闲' };
+        return { class: 'active', text: isEn ? 'Active' : '活跃' };
+      }
+
+      if (lastAssistant?.stopReason === 'aborted') {
+        if (secondsAgo > 600) return { class: 'idle', text: isEn ? 'Idle' : '空闲' };
+        return { class: 'active', text: isEn ? 'Interrupted' : '已中断' };
+      }
+
+      if (lastAssistant?.stopReason === 'toolUse') {
+        const content = Array.isArray(lastAssistant.content) ? lastAssistant.content : [];
+        const toolCalls = content.filter(b => b.type === 'toolCall');
+        if (toolCalls.length > 0) {
+          const toolNames = toolCalls.map(b => b.name || 'unknown');
+          return {
+            class: 'tool',
+            text: isEn ? 'Tool use' : '调用工具',
+            taskLabel: isEn ? '⚡ Calling' : '⚡ 正在调用',
+            task: toolNames.map(t => `<span class="tool-badge">${t}</span>`).join(' ')
+          };
+        }
+      }
+
+      if (lastUser && !lastAssistant) {
+        return {
+          class: 'thinking',
+          text: isEn ? 'Processing' : '处理中',
+          taskLabel: isEn ? '🔄 Responding' : '🔄 正在响应',
+          task: isEn ? 'Waiting for agent...' : '等待 Agent 响应...'
+        };
+      }
+
+      if (lastAssistant?.content) {
+        const content = Array.isArray(lastAssistant.content) ? lastAssistant.content : [];
+        const thinkingBlock = content.find(b => b.type === 'thinking');
+        if (thinkingBlock?.thinking) {
+          return {
+            class: 'thinking',
+            text: isEn ? 'Thinking' : '思考中',
+            taskLabel: isEn ? '💭 Thinking' : '💭 正在思考',
+            task: escapeHtml(thinkingBlock.thinking.substring(0, 300)) + (thinkingBlock.thinking.length > 300 ? '...' : '')
+          };
+        }
+      }
+
+      if (secondsAgo > 600) return { class: 'idle', text: isEn ? 'Idle' : '空闲' };
+      if (secondsAgo > 300) return { class: 'active', text: isEn ? 'Maybe idle' : '可能空闲' };
+      return { class: 'active', text: isEn ? 'Active' : '活跃' };
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function formatTokens(n) {
+      if (!n) return '0';
+      if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+      if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+      return String(n);
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('error');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+
+    init();
+  </script>
+</body>
+</html>
