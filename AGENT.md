@@ -48,7 +48,7 @@ node server.js
 
 ## 功能说明
 
-- **自动配置**: 从 `~/.kclaw/kclaw.json` 自动读取 Gateway 端口和 Token
+- **自动配置**: 从 `~/.openclaw/openclaw.json` 自动读取 Gateway 端口和 Token
 - **多语言**: 支持中英文界面
 - **状态监控**: 空闲/活跃/思考中/调用工具
 - **历史记录**: 保留 30 分钟内活跃过的 Agent

@@ -13,10 +13,10 @@ description: Guide agents to integrate and use the KClaw Agent Dashboard for mon
 
 ```bash
 # 复制整个 dashboard 项目到你的 workspace
-cp -r /path/to/KClaw-AgentDashboard ~/.kclaw/workspace/skills/kclaw-dashboard
+cp -r /path/to/KClaw-AgentDashboard ~/.openclaw/workspace/skills/kclaw-dashboard
 
 # 启动 dashboard
-cd ~/.kclaw/workspace/skills/kclaw-dashboard
+cd ~/.openclaw/workspace/skills/kclaw-dashboard
 node server.js
 ```
 
@@ -26,10 +26,10 @@ node server.js
 
 ```bash
 # 创建软链接，方便后续更新
-ln -s /path/to/KClaw-AgentDashboard ~/.kclaw/workspace/skills/kclaw-dashboard
+ln -s /path/to/KClaw-AgentDashboard ~/.openclaw/workspace/skills/kclaw-dashboard
 
 # 启动
-cd ~/.kclaw/workspace/skills/kclaw-dashboard
+cd ~/.openclaw/workspace/skills/kclaw-dashboard
 node server.js
 ```
 
