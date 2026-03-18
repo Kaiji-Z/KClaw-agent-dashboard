@@ -53,6 +53,29 @@ node server.js
 - **状态监控**: 空闲/活跃/思考中/调用工具
 - **历史记录**: 保留 30 分钟内活跃过的 Agent
 
+## 📱 手机访问（局域网内）
+
+同一 WiFi 下，可以用手机浏览器访问 Dashboard：
+
+1. 查看电脑 IP：
+   ```bash
+   # Windows
+   ipconfig
+   
+   # Mac/Linux
+   ifconfig
+   ```
+
+2. 手机浏览器访问：`http://你的电脑IP:3456`
+
+> ⚠️ 仅限同一局域网（同一 WiFi）内访问。出门在外无法直接访问。
+
+### 无法连接排查
+
+1. **Gateway 绑定地址** - 确保 `~/.openclaw/openclaw.json` 中 `gateway.bind` 不是 `loopback`
+2. **Windows 防火墙** - 可能需要放行 3456 端口
+3. **确认在同一网络** - 手机和电脑必须连接同一个 WiFi
+
 ## PM2 托管
 
 ```bash
