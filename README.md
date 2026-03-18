@@ -127,6 +127,80 @@ Dashboard 会实时分析 Agent 的状态：
 
 ---
 
+## 👤 人类使用指南
+
+作为普通用户，你可以通过 Dashboard 实时监控你的 Agent 状态。
+
+### 启动 Dashboard
+
+```bash
+node server.js
+```
+
+然后打开浏览器访问 **http://localhost:3456/**
+
+### 查看 Agent 状态
+
+- 🟢 **绿色** — Agent 正在活跃工作
+- 🟡 **黄色** — Agent 正在思考
+- 🔵 **蓝色** — Agent 正在调用工具
+- ⚪ **灰色** — Agent 处于空闲状态
+
+### 常见用途
+
+- 查看 Agent 当前是否在工作
+- 监控 Token 使用量，避免超出限制
+- 在手机上查看 Agent 状态（同一 WiFi 下）
+
+---
+
+## 🤖 Agent 集成指南
+
+如果你想让你的 Agent 能够报告状态给 Dashboard，可以集成这个 Skill。
+
+### 方法一：复制项目到 workspace
+
+```bash
+# 复制到你的 Agent workspace
+cp -r /path/to/KClaw-agent-dashboard ~/.openclaw/workspace/skills/kclaw-dashboard
+
+# 启动 Dashboard
+cd ~/.openclaw/workspace/skills/kclaw-dashboard
+node server.js
+```
+
+### 方法二：使用软链接（推荐）
+
+```bash
+# 创建软链接，方便后续更新
+ln -s /path/to/KClaw-agent-dashboard ~/.openclaw/workspace/skills/kclaw-dashboard
+```
+
+### Agent 回复示例
+
+当 Agent 启动后，可以在回复中告诉用户如何查看状态：
+
+```
+你可以在 Dashboard 查看我的实时状态：http://localhost:3456/
+```
+
+### 配置 Agent 名称
+
+编辑 `config.json5`：
+
+```json
+{
+  "agents": {
+    "your-agent-id": {
+      "name": "AI 助手",
+      "emoji": "🤖"
+    }
+  }
+}
+```
+
+---
+
 ## 📁 项目结构
 
 ```
@@ -237,6 +311,80 @@ Create `config.json5`:
   }
 }
 ```
+
+## 👤 For Humans
+
+As a regular user, you can monitor your Agent status in real-time via the Dashboard.
+
+### Start Dashboard
+
+```bash
+node server.js
+```
+
+Then open your browser to **http://localhost:3456/**
+
+### Understanding Agent Status
+
+- 🟢 **Green** — Agent is actively working
+- 🟡 **Yellow** — Agent is thinking
+- 🔵 **Blue** — Agent is calling tools
+- ⚪ **Gray** — Agent is idle
+
+### Common Use Cases
+
+- Check if Agent is currently working
+- Monitor Token usage to avoid hitting limits
+- View Agent status on your phone (same WiFi)
+
+---
+
+## 🤖 For Agents
+
+If you want your Agent to report status to the Dashboard, integrate this Skill.
+
+### Method 1: Copy to Workspace
+
+```bash
+# Copy to your Agent workspace
+cp -r /path/to/KClaw-agent-dashboard ~/.openclaw/workspace/skills/kclaw-dashboard
+
+# Start Dashboard
+cd ~/.openclaw/workspace/skills/kclaw-dashboard
+node server.js
+```
+
+### Method 2: Symlink (Recommended)
+
+```bash
+# Create symlink for easy updates
+ln -s /path/to/KClaw-agent-dashboard ~/.openclaw/workspace/skills/kclaw-dashboard
+```
+
+### Agent Response Example
+
+After starting, Agent can tell users how to view status:
+
+```
+You can view my real-time status on the Dashboard: http://localhost:3456/
+```
+
+### Configure Agent Names
+
+Edit `config.json5`:
+
+```json
+{
+  "agents": {
+    "your-agent-id": {
+      "name": "AI Assistant",
+      "emoji": "🤖"
+    }
+  }
+}
+```
+
+---
 
 ## 📄 License
 
