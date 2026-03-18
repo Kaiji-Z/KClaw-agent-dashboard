@@ -81,16 +81,16 @@ pm2 startup
 <details>
 <summary>🔧 无法连接排查</summary>
 
-1. **Gateway 绑定地址** - 确保 `~/.openclaw/openclaw.json` 中 `gateway.bind` 不是 `loopback`:
-   ```json
-   { "gateway": { "bind": "0.0.0.0" } }
-   ```
+- **Gateway 绑定地址** - 确保 `~/.openclaw/openclaw.json` 中 `gateway.bind` 不是 `loopback`:
+  ```json
+  { "gateway": { "bind": "0.0.0.0" } }
+  ```
 
-2. **Windows 防火墙** - 可能需要放行 3456 端口:
-   - 控制面板 → Windows Defender 防火墙 → 高级设置
-   - 入站规则 → 新建规则 → 端口 → 3456 → 允许连接
+- **Windows 防火墙** - 可能需要放行 3456 端口:
+  - 控制面板 → Windows Defender 防火墙 → 高级设置
+  - 入站规则 → 新建规则 → 端口 → 3456 → 允许连接
 
-3. **确认在同一网络** - 手机和电脑必须连接同一个 WiFi
+- **确认在同一网络** - 手机和电脑必须连接同一个 WiFi
 </details>
 ### ⚙️ 配置说明
 | 配置项 | 环境变量 | 默认值 | 说明 |
@@ -163,14 +163,16 @@ Access from your phone within the same WiFi network:
 <details>
 <summary>🔧 Troubleshooting</summary>
 
-1. **Gateway bind address** - Ensure `gateway.bind` is not `loopback` in `~/.openclaw/openclaw.json`:
-   ```json
-   { "gateway": { "bind": "0.0.0.0" } }
-   ```
-2. **Windows Firewall** - Allow port 3456:
-   - Control Panel → Windows Defender Firewall → Advanced Settings
-   - Inbound Rules → New Rule → Port → 3456 → Allow Connection
-3. **Same Network** - Phone and computer must be on the same WiFi
+- **Gateway bind address** - Ensure `gateway.bind` is not `loopback` in `~/.openclaw/openclaw.json`:
+  ```json
+  { "gateway": { "bind": "0.0.0.0" } }
+  ```
+
+- **Windows Firewall** - Allow port 3456:
+  - Control Panel → Windows Defender Firewall → Advanced Settings
+  - Inbound Rules → New Rule → Port → 3456 → Allow Connection
+
+- **Same Network** - Phone and computer must be on the same WiFi
 </details>
 ### ⚙️ Configuration
 Create `config.json5`:
