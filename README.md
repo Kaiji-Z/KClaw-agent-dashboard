@@ -21,6 +21,58 @@
 
 ---
 
+## ⚡ 一键安装
+
+### 🤖 复制给你的 Agent
+
+如果你使用 Claude、Cursor 等 AI Agent，直接复制下面这行命令给它：
+
+> "请帮我下载并启动 KClaw Agent Dashboard：git clone https://github.com/Kaiji-Z/KClaw-agent-dashboard.git && cd KClaw-agent-dashboard && node server.js，然后告诉我访问地址"
+
+### 👤 手动安装（不需要懂代码）
+
+**步骤 1：下载项目**
+
+1. 打开浏览器访问：https://github.com/Kaiji-Z/KClaw-agent-dashboard
+2. 点击绿色的 **Code** 按钮
+3. 点击 **Download ZIP**
+4. 把下载的压缩包解压到任意文件夹
+
+**步骤 2：启动 Dashboard**
+
+1. 双击运行文件夹里的 `start.bat`（Windows）或 `start.sh`（Mac/Linux）
+2. 浏览器会自动打开 http://localhost:3456/
+
+> 💡 如果没有 `start.bat`，直接打开终端（Windows 按 Win+R 输入 `cmd`，Mac 打开终端），进入文件夹后输入 `node server.js` 然后回车
+
+---
+
+### ⚡ Quick Install
+
+### 🤖 For AI Agents
+
+If you're using Claude, Cursor, or any AI Agent, just copy this line:
+
+> "Please download and start KClaw Agent Dashboard: git clone https://github.com/Kaiji-Z/KClaw-agent-dashboard.git && cd KClaw-agent-dashboard && node server.js, then tell me the access address"
+
+### 👤 Manual Install (No Coding Required)
+
+**Step 1: Download**
+
+1. Open browser: https://github.com/Kaiji-Z/KClaw-agent-dashboard
+2. Click green **Code** button
+3. Click **Download ZIP**
+4. Extract the ZIP to any folder
+
+**Step 2: Run Dashboard**
+
+1. Double-click `start.bat` (Windows) or `start.sh` (Mac/Linux)
+2. Browser will automatically open http://localhost:3456/
+
+> 💡 If no `start.bat`, open terminal (Windows: Win+R → `cmd`, Mac: Terminal), navigate to folder, type `node server.js` and press Enter
+
+---
+
 ## ✨ 功能特性
 
 | 功能 | 说明 |
