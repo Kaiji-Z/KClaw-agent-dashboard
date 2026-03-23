@@ -1164,38 +1164,7 @@ let cachedResults = [];
       `).join('');
     }
 
-    // Token progress bar
-    const TOKEN_THRESHOLDS = {
-      WARNING: 100000,
-      CRITICAL: 150000
-      MAX: 200000
-    };
 
-    function getTokenClass(tokens) {
-      if (!tokens) return 'normal';
-      if (tokens >= TOKEN_THRESHOLDS.CRITICAL) return 'critical';
-      if (tokens >= TOKEN_THRESHOLDS.WARNING) return 'warning';
-      return 'normal';
-    }
-
-    function renderTokenBar(tokens) {
-      if (!tokens) return '';
-      const percentage = Math.min((tokens / TOKEN_THRESHOLDS.MAX) * 100, 100);
-      const tokenClass = getTokenClass(tokens);
-      const isEn = APP_CONFIG.language === 'en';
-      
-      return `
-        <div class="token-bar-container">
-          <div class="token-bar">
-            <div class="token-bar-fill ${tokenClass}" style="width: ${percentage}%"></div>
-          </div>
-          <div class="token-info">
-            <span class="token-value ${tokenClass}">${formatTokens(tokens)}</span>
-            <span>${isEn ? 'Threshold: 100K/150K' : '阈值: 100K/150K'}</span>
-          </div>
-        </div>
-      `;
-    }
 
     // Activity timeline
     const TIMELINE_KEY = 'agent_dashboard_timeline';
