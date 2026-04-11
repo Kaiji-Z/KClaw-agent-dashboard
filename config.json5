@@ -1,9 +1,15 @@
 {
   "port": 3456,
   "gatewayUrl": "http://127.0.0.1:18789",
-  "refreshInterval": 1500,
   "language": "zh-CN",
+  "minInterval": 3000,
+  "maxInterval": 30000,
+  "ssePollInterval": 10000,
   "agents": {
-    "example-agent": { "name": "Example Agent", "emoji": "🤖" }
+    "main": { "name": "肉包", "emoji": "🥟" },
+    "lambda": { "name": "λ汪汪λ", "emoji": "🐶" },
+    "meongmeong": { "name": "饼饼", "emoji": "🐶" },
+    "xiantiaojun-bot": { "name": "线条君", "emoji": "🎨" },
+    "jiroubao": { "name": "肌肉包", "emoji": "💪" }
   }
 }

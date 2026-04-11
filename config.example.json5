@@ -1,0 +1,11 @@
+{
+  "port": 3456,
+  "gatewayUrl": "http://127.0.0.1:18789",
+  "language": "zh-CN",
+  "minInterval": 3000,
+  "maxInterval": 30000,
+  "ssePollInterval": 10000,
+  "agents": {
+    "main": { "name": "My Agent", "emoji": "🤖" }
+  }
+}

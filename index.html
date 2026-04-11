@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KClaw Agent Dashboard</title>
+    <title>Kaiji Dashboard</title>
   <meta name="theme-color" content="#0d1117">
   <style>
     :root {
@@ -604,8 +604,8 @@
       <div class="brand">
         <span class="brand-icon">🤖</span>
         <div>
-          <h1 id="page-title">KClaw Agent Dashboard</h1>
-          <span style="font-size:0.7rem;color:var(--text-muted)" id="version">v1.0</span>
+          <h1 id="page-title">Kaiji Dashboard</h1>
+          <span style="font-size:0.7rem;color:var(--text-muted)" id="version">v4</span>
         </div>
       </div>
     </div>
@@ -671,78 +671,65 @@
     </div>
   </div>
 
-  <!-- Settings Modal -->
-  <div id="settings-modal" class="modal hidden">
-    <div class="modal-overlay" onclick="closeSettings()"></div>
-    <div class="modal-content">
-      <h3>⚙️ <span id="settings-title">设置</span></h3>
-      <div class="form-group">
-        <label for="pref-language"><span id="lang-label">语言</span></label>
-        <select id="pref-language">
-          <option value="zh-CN">中文</option>
-          <option value="en">English</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="pref-refresh"><span id="refresh-label">刷新间隔</span></label>
-        <select id="pref-refresh">
-          <option value="1000">1s</option>
-          <option value="1500">1.5s</option>
-          <option value="2000">2s</option>
-          <option value="3000">3s</option>
-          <option value="5000">5s</option>
-        </select>
-      </div>
-      <div class="modal-actions">
-        <button class="btn-secondary" onclick="closeSettings()"><span id="cancel-btn">取消</span></button>
-        <button class="btn-primary" onclick="applySettings()"><span id="apply-btn">应用</span></button>
-      </div>
-    </div>
-  </div>
-
   <script>
-    // 从服务器获取配置
-    let APP_CONFIG = { refreshInterval: 1500, language: 'zh-CN', agents: {} };
-    let token = localStorage.getItem('gateway_token') || '';
-    let pollTimer = null;
-let searchQuery = '';
-let cachedResults = [];
+    // ============ Kaiji Dashboard v4 — SSE + 智能轮询 ============
 
-    // Refresh control state
+    let APP_CONFIG = { refreshInterval: 1500, minInterval: 3000, maxInterval: 30000, ssePollInterval: 10000, language: 'zh-CN', agents: {} };
+    let token = localStorage.getItem('gateway_token') || '';
+    let searchQuery = '';
+    let cachedResults = [];
     let isRefreshing = false;
     let autoRefreshEnabled = true;
-    
+
     // 历史记录（保留 30 分钟）
     const AGENT_HISTORY_TTL = 30 * 60 * 1000;
-    const STORAGE_KEY = 'agent_dashboard_history';
+    const STORAGE_KEY = 'kaiji_dashboard_history';
     let agentHistory = loadAgentHistory();
-    
+
+    // SSE 状态
+    let eventSource = null;
+    let pollTimer = null;
+    let currentPollInterval = 3000;
+
+    // Page Visibility
+    let pageVisible = true;
+
     function loadAgentHistory() {
       try {
         const data = localStorage.getItem(STORAGE_KEY);
         return data ? new Map(JSON.parse(data)) : new Map();
       } catch (e) { return new Map(); }
     }
-    
+
     function saveAgentHistory(history) {
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify([...history])); } catch (e) {}
     }
 
-    // 初始化
+    // ============ 初始化 ============
+
     async function init() {
-      // Load auto-refresh preference from localStorage
       const storedAutoRefresh = localStorage.getItem('auto_refresh');
-      if (storedAutoRefresh !== null) {
-        autoRefreshEnabled = storedAutoRefresh === 'true';
-      }
-      
-      // 获取服务器配置
+      if (storedAutoRefresh !== null) autoRefreshEnabled = storedAutoRefresh === 'true';
+
       try {
         const res = await fetch('/api/config');
         APP_CONFIG = await res.json();
         updateLanguage();
       } catch (e) {}
-      
+
+      // Page Visibility API — 切走就暂停
+      document.addEventListener('visibilitychange', () => {
+        pageVisible = !document.hidden;
+        if (pageVisible) {
+          // 切回来时立即刷新一次
+          fetchStatus();
+          adjustPollInterval();
+        } else {
+          // 切走时暂停轮询（SSE 由服务端控制不受影响）
+          clearPollTimer();
+        }
+      });
+
       // 尝试自动获取 Token
       try {
         const res = await fetch('/api/auto-token');
@@ -756,35 +743,35 @@ let cachedResults = [];
         }
       } catch (e) {}
     }
-    
+
     function updateLanguage() {
       const lang = APP_CONFIG.language || 'zh-CN';
       const isEn = lang === 'en';
-      
       document.getElementById('login-title').textContent = isEn ? 'Connect Gateway' : '连接 Gateway';
       document.getElementById('login-hint').textContent = isEn ? 'Enter Gateway Token to connect' : '输入 Gateway Token 以连接';
       document.getElementById('connect-btn').textContent = isEn ? 'Connect' : '连接';
-      document.getElementById('page-title').textContent = isEn ? 'Agent Dashboard' : 'Agent 状态仪表盘';
-      document.getElementById('version').textContent = isEn ? 'v3 Universal' : 'v3 通用版';
+      document.getElementById('page-title').textContent = isEn ? 'Kaiji Dashboard' : 'Kaiji Dashboard';
+      document.getElementById('version').textContent = isEn ? 'v4 Optimized' : 'v4 优化版';
       document.getElementById('loading-text').textContent = isEn ? 'Loading...' : '正在加载...';
       document.getElementById('last-update-label').textContent = isEn ? 'Last update' : '最后更新';
     }
 
+    // ============ 连接 ============
+
     async function connect() {
       token = document.getElementById('token-input').value.trim();
       if (!token) return showError(APP_CONFIG.language === 'en' ? 'Please enter Token' : '请输入 Token');
-      
       localStorage.setItem('gateway_token', token);
-      
+
       try {
-        const data = await fetchSessionsList();
+        const data = await fetchStatus();
         if (data.error) return showError(data.error);
-        
+
         document.getElementById('login-screen').classList.add('hidden');
         setConnected(true);
-        
-        await refreshData();
-        pollTimer = setInterval(refreshData, APP_CONFIG.refreshInterval || 1500);
+
+        // 启动 SSE（优先），失败则降级到智能轮询
+        connectSSE();
       } catch (e) {
         showError((APP_CONFIG.language === 'en' ? 'Connection failed: ' : '连接失败: ') + e.message);
       }
@@ -805,105 +792,154 @@ let cachedResults = [];
       }
     }
 
-    async function fetchSessionsList() {
-      const res = await fetch('/api/tools/invoke', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ tool: 'sessions_list', args: { activeMinutes: 60, messageLimit: 1 } })
-      });
-      const data = await res.json();
-      
-      if (!data.ok) return { error: data.error?.message || (APP_CONFIG.language === 'en' ? 'Request failed' : '请求失败') };
-      
-      let sessions = data.result?.details?.sessions || data.result?.sessions || [];
-      
-      if (sessions.length === 0 && data.result?.content?.[0]?.text) {
-        try {
-          const parsed = JSON.parse(data.result.content[0].text);
-          sessions = parsed.sessions || [];
-        } catch (e) {}
+    // ============ SSE 连接（方案 C） ============
+
+    function connectSSE() {
+      disconnectSSE();
+      try {
+        eventSource = new EventSource('/api/events');
+        eventSource.onmessage = (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            processData(data);
+          } catch (err) { console.error('SSE parse error:', err); }
+        };
+        eventSource.onerror = () => {
+          console.warn('SSE disconnected, falling back to polling');
+          disconnectSSE();
+          startSmartPolling();
+        };
+        console.log('📡 SSE connected');
+        updateAutoRefreshButton();
+      } catch (e) {
+        console.warn('SSE not supported, using polling');
+        startSmartPolling();
       }
-      
-      return { sessions };
     }
 
-    async function fetchSessionHistory(sessionKey) {
+    function disconnectSSE() {
+      if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+      }
+    }
+
+    // ============ 智能轮询（方案 B 兜底） ============
+
+    function startSmartPolling() {
+      clearPollTimer();
+      currentPollInterval = APP_CONFIG.minInterval || 3000;
+      pollTimer = setInterval(() => {
+        if (!pageVisible || isRefreshing) return;
+        fetchStatus();
+      }, currentPollInterval);
+      updateAutoRefreshButton();
+    }
+
+    function clearPollTimer() {
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    }
+
+    function adjustPollInterval() {
+      // 根据活跃状态动态调整间隔
+      const now = Date.now();
+      const hasActive = cachedResults.some(r => {
+        const t = r.latest?.updatedAt || 0;
+        return (now - t) < 5 * 60 * 1000; // 5分钟内活跃
+      });
+
+      const newInterval = hasActive
+        ? (APP_CONFIG.minInterval || 3000)
+        : (APP_CONFIG.maxInterval || 30000);
+
+      if (newInterval !== currentPollInterval) {
+        currentPollInterval = newInterval;
+        // 只在轮询模式下重设定时器
+        if (!eventSource && autoRefreshEnabled) {
+          startSmartPolling();
+        }
+      }
+    }
+
+    // ============ 数据获取（单次请求替代 N+1） ============
+
+    async function fetchStatus() {
+      if (isRefreshing) return { error: 'already refreshing' };
+      isRefreshing = true;
+      updateRefreshButton(true);
+
       try {
-        const res = await fetch('/api/tools/invoke', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ tool: 'sessions_history', args: { sessionKey, limit: 2 } })
+        const res = await fetch('/api/status', {
+          headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
-        if (!data.ok) return [];
-        let messages = data.result?.messages || [];
-        if (data.result?.content?.[0]?.text) {
-          try {
-            const parsed = JSON.parse(data.result.content[0].text);
-            messages = parsed.messages || [];
-          } catch (e) {}
-        }
-        return messages;
-      } catch (e) { return []; }
+        if (data.error) { console.error('Fetch error:', data.error); return data; }
+        processData(data);
+        return data;
+      } catch (e) {
+        console.error('Fetch failed:', e);
+        return { error: e.message };
+      } finally {
+        isRefreshing = false;
+        updateRefreshButton(false);
+      }
     }
 
-    async function refreshData() {
-      const data = await fetchSessionsList();
-      if (data.error) { console.error('Failed to fetch sessions:', data.error); return; }
-      
-      const sessions = data.sessions || [];
+    // ============ 数据处理 + 防抖渲染 ============
+
+    let renderPending = false;
+
+    function processData(data) {
+      const agents = data.agents || [];
       const now = Date.now();
-      
-      // 按 agent 分组
-      const agents = new Map();
-      sessions.forEach(s => {
-        const agentId = s.key.split(':')[1] || 'unknown';
-        if (!agents.has(agentId)) agents.set(agentId, []);
-        agents.get(agentId).push(s);
+
+      // 合并历史记录
+      const results = [];
+      const activeAgentIds = new Set();
+
+      agents.forEach(({ agentId, latest }) => {
+        activeAgentIds.add(agentId);
+        agentHistory.set(agentId, { lastActive: now, data: { agentId, sessions: data.sessions || [], latest } });
+        results.push({ agentId, sessions: data.sessions || [], latest, isActive: true });
       });
-      
-      // 获取历史
-      const historyPromises = [];
-      agents.forEach((sessions, agentId) => {
-        const latest = sessions.sort((a, b) => b.updatedAt - a.updatedAt)[0];
-        historyPromises.push(
-          fetchSessionHistory(latest.key).then(messages => {
-            latest.messages = messages;
-            agentHistory.set(agentId, { lastActive: now, data: { agentId, sessions, latest } });
-            return { agentId, sessions, latest, isActive: true };
-          })
-        );
-      });
-      
-      let results = await Promise.all(historyPromises);
-      
-      // 清理过期记录
+
+      // 清理过期
       for (const [agentId, record] of agentHistory) {
         if (now - record.lastActive > AGENT_HISTORY_TTL) agentHistory.delete(agentId);
       }
       saveAgentHistory(agentHistory);
-      
-      // 添加不活跃的 agent
-      const activeAgentIds = new Set(results.map(r => r.agentId));
+
+      // 添加不活跃的
       for (const [agentId, record] of agentHistory) {
         if (!activeAgentIds.has(agentId)) results.push({ ...record.data, isActive: false });
       }
-      
+
       // 排序
       results.sort((a, b) => {
-        const timeA = a.latest?.updatedAt || a.lastActive || 0;
-        const timeB = b.latest?.updatedAt || b.lastActive || 0;
-        return timeB - timeA;
+        const tA = a.latest?.updatedAt || a.lastActive || 0;
+        const tB = b.latest?.updatedAt || b.lastActive || 0;
+        return tB - tA;
       });
-      
+
       cachedResults = results;
-      filterAndRenderAgents();
+
+      // 防抖渲染：合并到同一帧
+      if (!renderPending) {
+        renderPending = true;
+        requestAnimationFrame(() => {
+          renderPending = false;
+          filterAndRenderAgents();
+          adjustPollInterval();
+        });
+      }
     }
+
+    // ============ 渲染（与原版相同） ============
 
     function renderAgents(results) {
       const grid = document.getElementById('agents-grid');
       const isEn = APP_CONFIG.language === 'en';
-      
+
       if (results.length === 0) {
         grid.innerHTML = `<div class="empty-state">${isEn ? 'No active agents' : '暂无活跃的 Agent'}</div>`;
         return;
@@ -918,7 +954,7 @@ let cachedResults = [];
         const lastActive = latest?.updatedAt ? formatTimeAgo(latest.updatedAt, isEn) : '-';
         const cardClass = isActive ? 'agent-card ' + status.class : 'agent-card idle';
         const channelInfo = formatChannel(latest, isEn);
-        
+
         const card = document.createElement('div');
         card.className = cardClass;
         card.innerHTML = `
@@ -958,7 +994,7 @@ let cachedResults = [];
 
       document.getElementById('last-time').textContent = new Date().toLocaleTimeString();
     }
-    
+
     function formatTimeAgo(timestamp, isEn) {
       const seconds = Math.floor((Date.now() - timestamp) / 1000);
       if (seconds < 60) return isEn ? 'Just now' : '刚刚';
@@ -969,31 +1005,78 @@ let cachedResults = [];
       const days = Math.floor(hours / 24);
       return `${days}${isEn ? 'd ago' : '天前'}`;
     }
-    
+
     function formatChannel(session, isEn) {
       if (!session) return null;
       const channel = session.channel || session.provider || session.surface;
       const chatType = session.chat_type || session.chatType;
       if (!channel) return null;
-      
-      const icons = {
-        'webchat': '🌐', 'telegram': '📱', 'discord': '💬', 'feishu': '🪽',
-        'whatsapp': '📞', 'signal': '🔒', 'slack': '💼', 'irc': '📡',
-        'imessage': '💙', 'googlechat': '👥'
-      };
-      
+      const icons = { 'webchat': '🌐', 'telegram': '📱', 'discord': '💬', 'feishu': '🪽', 'whatsapp': '📞', 'signal': '🔒', 'slack': '💼', 'irc': '📡', 'imessage': '💙', 'googlechat': '👥' };
       const icon = icons[channel] || '📡';
       const typeLabel = chatType === 'direct' ? (isEn ? 'DM' : '私信') : (chatType === 'group' ? (isEn ? 'Group' : '群聊') : '');
       return `<span class="icon">${icon}</span> ${channel}${typeLabel ? ` · ${typeLabel}` : ''}`;
     }
 
+    function analyzeStatus(session, isEn) {
+      const lastUpdate = session.updatedAt || 0;
+      const secondsAgo = (Date.now() - lastUpdate) / 1000;
+      const messages = session.messages || [];
+      const lastAssistant = messages.find(m => m.role === 'assistant');
+      const lastUser = messages.find(m => m.role === 'user');
+
+      if (lastAssistant?.stopReason === 'stop') {
+        if (secondsAgo > 600) return { class: 'idle', text: isEn ? 'Idle' : '空闲' };
+        if (secondsAgo > 300) return { class: 'active', text: isEn ? 'Maybe idle' : '可能空闲' };
+        return { class: 'active', text: isEn ? 'Active' : '活跃' };
+      }
+      if (lastAssistant?.stopReason === 'aborted') {
+        if (secondsAgo > 600) return { class: 'idle', text: isEn ? 'Idle' : '空闲' };
+        return { class: 'active', text: isEn ? 'Interrupted' : '已中断' };
+      }
+      if (lastAssistant?.stopReason === 'toolUse') {
+        const content = Array.isArray(lastAssistant.content) ? lastAssistant.content : [];
+        const toolCalls = content.filter(b => b.type === 'toolCall');
+        if (toolCalls.length > 0) {
+          const toolNames = toolCalls.map(b => b.name || 'unknown');
+          return { class: 'tool', text: isEn ? 'Tool use' : '调用工具', taskLabel: isEn ? '⚡ Calling' : '⚡ 正在调用', task: toolNames.map(t => `<span class="tool-badge">${t}</span>`).join(' ') };
+        }
+      }
+      if (lastUser && !lastAssistant) {
+        return { class: 'thinking', text: isEn ? 'Processing' : '处理中', taskLabel: isEn ? '🔄 Responding' : '🔄 正在响应', task: isEn ? 'Waiting for agent...' : '等待 Agent 响应...' };
+      }
+      if (lastAssistant?.content) {
+        const content = Array.isArray(lastAssistant.content) ? lastAssistant.content : [];
+        const thinkingBlock = content.find(b => b.type === 'thinking');
+        if (thinkingBlock?.thinking) {
+          return { class: 'thinking', text: isEn ? 'Thinking' : '思考中', taskLabel: isEn ? '💭 Thinking' : '💭 正在思考', task: escapeHtml(thinkingBlock.thinking.substring(0, 300)) + (thinkingBlock.thinking.length > 300 ? '...' : '') };
+        }
+      }
+      if (secondsAgo > 600) return { class: 'idle', text: isEn ? 'Idle' : '空闲' };
+      if (secondsAgo > 300) return { class: 'active', text: isEn ? 'Maybe idle' : '可能空闲' };
+      return { class: 'active', text: isEn ? 'Active' : '活跃' };
+    }
+
+    function escapeHtml(text) { const d = document.createElement('div'); d.textContent = text; return d.innerHTML; }
+    function formatTokens(n) { if (!n) return '0'; if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M'; if (n >= 1000) return (n / 1000).toFixed(1) + 'K'; return String(n); }
+
+    const TOKEN_THRESHOLDS = { WARNING: 100000, CRITICAL: 150000, MAX: 200000 };
+    function getTokenClass(tokens) { if (!tokens) return 'normal'; if (tokens >= TOKEN_THRESHOLDS.CRITICAL) return 'critical'; if (tokens >= TOKEN_THRESHOLDS.WARNING) return 'warning'; return 'normal'; }
+    function renderTokenBar(tokens) {
+      if (!tokens) return '';
+      const pct = Math.min((tokens / TOKEN_THRESHOLDS.MAX) * 100, 100);
+      const cls = getTokenClass(tokens);
+      const isEn = APP_CONFIG.language === 'en';
+      return `<div class="token-bar-container"><div class="token-bar"><div class="token-bar-fill ${cls}" style="width: ${pct}%"></div></div><div class="token-info"><span class="token-value ${cls}">${formatTokens(tokens)}</span><span>${isEn ? 'Threshold: 100K/150K' : '阈值: 100K/150K'}</span></div></div>`;
+    }
+
+    function showError(msg) { const el = document.getElementById('error'); el.textContent = msg; el.classList.remove('hidden'); }
+
+    // ============ 搜索 ============
+
     function handleSearch(e) {
       searchQuery = e.target.value.toLowerCase().trim();
-      // Show/hide clear button
       const clearBtn = document.querySelector('.search-clear');
-      if (clearBtn) {
-        clearBtn.classList.toggle('hidden', !searchQuery);
-      }
+      if (clearBtn) clearBtn.classList.toggle('hidden', !searchQuery);
       filterAndRenderAgents();
     }
 
@@ -1012,17 +1095,13 @@ let cachedResults = [];
         const name = (agentConfig.name || agent.agentId).toLowerCase();
         const status = analyzeStatus(agent.latest, APP_CONFIG.language === 'en').text.toLowerCase();
         const channel = formatChannel(agent.latest, APP_CONFIG.language === 'en') || '';
-        
-        return name.includes(searchQuery) || 
-               status.includes(searchQuery) || 
-               channel.toLowerCase().includes(searchQuery);
+        return name.includes(searchQuery) || status.includes(searchQuery) || channel.toLowerCase().includes(searchQuery);
       });
     }
 
     function filterAndRenderAgents() {
       const filtered = filterAgents(cachedResults);
       if (filtered.length === 0 && cachedResults.length > 0) {
-        // Show no-results empty state
         const grid = document.getElementById('agents-grid');
         const isEn = APP_CONFIG.language === 'en';
         grid.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">${isEn ? 'No Results' : '未找到结果'}</div><div class="empty-description">${isEn ? 'Try adjusting your search query.' : '请尝试调整搜索条件。'}</div></div>`;
@@ -1031,193 +1110,11 @@ let cachedResults = [];
       }
     }
 
-    function analyzeStatus(session, isEn) {
-      const lastUpdate = session.updatedAt || 0;
-      const secondsAgo = (Date.now() - lastUpdate) / 1000;
-      const messages = session.messages || [];
-      const lastAssistant = messages.find(m => m.role === 'assistant');
-      const lastUser = messages.find(m => m.role === 'user');
+    // ============ 设置 ============
 
-      if (lastAssistant?.stopReason === 'stop') {
-        if (secondsAgo > 600) return { class: 'idle', text: isEn ? 'Idle' : '空闲' };
-        if (secondsAgo > 300) return { class: 'active', text: isEn ? 'Maybe idle' : '可能空闲' };
-        return { class: 'active', text: isEn ? 'Active' : '活跃' };
-      }
-
-      if (lastAssistant?.stopReason === 'aborted') {
-        if (secondsAgo > 600) return { class: 'idle', text: isEn ? 'Idle' : '空闲' };
-        return { class: 'active', text: isEn ? 'Interrupted' : '已中断' };
-      }
-
-      if (lastAssistant?.stopReason === 'toolUse') {
-        const content = Array.isArray(lastAssistant.content) ? lastAssistant.content : [];
-        const toolCalls = content.filter(b => b.type === 'toolCall');
-        if (toolCalls.length > 0) {
-          const toolNames = toolCalls.map(b => b.name || 'unknown');
-          return {
-            class: 'tool',
-            text: isEn ? 'Tool use' : '调用工具',
-            taskLabel: isEn ? '⚡ Calling' : '⚡ 正在调用',
-            task: toolNames.map(t => `<span class="tool-badge">${t}</span>`).join(' ')
-          };
-        }
-      }
-
-      if (lastUser && !lastAssistant) {
-        return {
-          class: 'thinking',
-          text: isEn ? 'Processing' : '处理中',
-          taskLabel: isEn ? '🔄 Responding' : '🔄 正在响应',
-          task: isEn ? 'Waiting for agent...' : '等待 Agent 响应...'
-        };
-      }
-
-      if (lastAssistant?.content) {
-        const content = Array.isArray(lastAssistant.content) ? lastAssistant.content : [];
-        const thinkingBlock = content.find(b => b.type === 'thinking');
-        if (thinkingBlock?.thinking) {
-          return {
-            class: 'thinking',
-            text: isEn ? 'Thinking' : '思考中',
-            taskLabel: isEn ? '💭 Thinking' : '💭 正在思考',
-            task: escapeHtml(thinkingBlock.thinking.substring(0, 300)) + (thinkingBlock.thinking.length > 300 ? '...' : '')
-          };
-        }
-      }
-
-      if (secondsAgo > 600) return { class: 'idle', text: isEn ? 'Idle' : '空闲' };
-      if (secondsAgo > 300) return { class: 'active', text: isEn ? 'Maybe idle' : '可能空闲' };
-      return { class: 'active', text: isEn ? 'Active' : '活跃' };
-    }
-
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    }
-
-    function formatTokens(n) {
-      if (!n) return '0';
-      if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-      if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
-      return String(n);
-    }
-
-    // Token progress bar functions
-    const TOKEN_THRESHOLDS = {
-      WARNING: 100000,
-      CRITICAL: 150000,
-      MAX: 200000
-    };
-
-    function getTokenClass(tokens) {
-      if (!tokens) return 'normal';
-      if (tokens >= TOKEN_THRESHOLDS.CRITICAL) return 'critical';
-      if (tokens >= TOKEN_THRESHOLDS.WARNING) return 'warning';
-      return 'normal';
-    }
-
-    function renderTokenBar(tokens) {
-      if (!tokens) return '';
-      const percentage = Math.min((tokens / TOKEN_THRESHOLDS.MAX) * 100, 100);
-      const tokenClass = getTokenClass(tokens);
-      const isEn = APP_CONFIG.language === 'en';
-      const formatted = formatTokens(tokens);
-      
-      return `
-        <div class="token-bar-container">
-          <div class="token-bar">
-            <div class="token-bar-fill ${tokenClass}" style="width: ${percentage}%"></div>
-          </div>
-          <div class="token-info">
-            <span class="token-value ${tokenClass}">${formatted}</span>
-            <span>${isEn ? 'Threshold: 100K/150K' : '阈值: 100K/150K'}</span>
-          </div>
-        </div>
-      `;
-    }
-
-    function showError(msg) {
-      const el = document.getElementById('error');
-      el.textContent = msg;
-      el.classList.remove('hidden');
-    }
-
-    // Skeleton loading
-    function renderSkeletons(count = 3) {
-      const grid = document.getElementById('agents-grid');
-      grid.innerHTML = Array(count).fill(`
-        <div class="skeleton-card">
-          <div class="agent-header">
-            <div class="skeleton skeleton-avatar"></div>
-            <div style="flex:1">
-              <div class="skeleton skeleton-text" style="width:60%"></div>
-              <div class="skeleton skeleton-text-sm"></div>
-            </div>
-          </div>
-          <div class="stats">
-            <div class="skeleton skeleton-stat"></div>
-            <div class="skeleton skeleton-stat"></div>
-            <div class="skeleton skeleton-stat"></div>
-          </div>
-        </div>
-      `).join('');
-    }
-
-
-
-    // Activity timeline
-    const TIMELINE_KEY = 'agent_dashboard_timeline';
-    const MAX_TIMELINE_EVENTS = 50;
-
-    function recordActivity(agentId, action) {
-      const timeline = loadTimeline();
-      const now = Date.now();
-      timeline.push({ agentId, action, timestamp: now });
-      if (timeline.length > MAX_TIMELINE_EVENTS) timeline.shift();
-      localStorage.setItem(TIMELINE_KEY, JSON.stringify(timeline));
-    }
-
-    function loadTimeline() {
-      try {
-        const data = localStorage.getItem(TIMELINE_KEY);
-        return data ? JSON.parse(data) : [];
-      } catch (e) { return []; }
-    }
-
-    function getAgentTimeline(agentId, limit = 10) {
-      return loadTimeline().filter(e => e.agentId === agentId).slice(-limit);
-    }
-
-    function renderTimeline(agentId) {
-      const events = getAgentTimeline(agentId);
-      if (events.length === 0) return '';
-      const isEn = APP_CONFIG.language === 'en';
-      const actionLabels = {
-        'active': isEn ? 'Active' : '活跃',
-        'thinking': isEn ? 'Think' : '思考',
-        'tool': isEn ? 'Tool' : '工具',
-        'idle': isEn ? 'Idle' : '空闲'
-      };
-      return `
-        <div class="timeline">
-          ${events.map(event => `
-            <div class="timeline-item ${event.action}">
-              <span class="timeline-dot"></span>
-              <span class="timeline-time">${new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-              <span class="timeline-label">${actionLabels[event.action]}</span>
-            </div>
-          `).join('')}
-        </div>
-      `;
-    }
-
-    // Settings modal
     function openSettings() {
-      const modal = document.getElementById('settings-modal');
-      modal.classList.remove('hidden');
+      document.getElementById('settings-modal').classList.remove('hidden');
       document.getElementById('pref-language').value = APP_CONFIG.language || 'zh-CN';
-      document.getElementById('pref-refresh').value = getRefreshInterval();
     }
 
     function closeSettings() {
@@ -1226,69 +1123,52 @@ let cachedResults = [];
 
     function applySettings() {
       const lang = document.getElementById('pref-language').value;
-      const interval = parseInt(document.getElementById('pref-refresh').value, 10);
-      localStorage.setItem('refresh_interval', interval);
       if (lang !== APP_CONFIG.language) {
         localStorage.setItem('dashboard_language', lang);
         APP_CONFIG.language = lang;
         updateLanguage();
       }
-      if (pollTimer) {
-        clearInterval(pollTimer);
-        pollTimer = setInterval(refreshData, interval);
-      }
       closeSettings();
     }
 
-    // Manual refresh function
+    // ============ 刷新控制 ============
+
     async function manualRefresh() {
       if (isRefreshing) return;
-      isRefreshing = true;
-      updateRefreshButton(true);
-      try {
-        await refreshData();
-      } finally {
-        isRefreshing = false;
-        updateRefreshButton(false);
-      }
+      await fetchStatus();
     }
 
-    // Update refresh button state
     function updateRefreshButton(loading) {
       const btn = document.getElementById('refresh-btn');
       if (!btn) return;
       btn.classList.toggle('loading', loading);
       const icon = btn.querySelector('.btn-icon');
-      if (icon) {
-        icon.textContent = loading ? '⏳' : '🔄';
-      }
+      if (icon) icon.textContent = loading ? '⏳' : '🔄';
     }
 
-    // Toggle auto-refresh
     function toggleAutoRefresh() {
       autoRefreshEnabled = !autoRefreshEnabled;
       if (autoRefreshEnabled) {
-        pollTimer = setInterval(refreshData, getRefreshInterval());
+        if (eventSource) {
+          // SSE 还在，不用管
+        } else {
+          startSmartPolling();
+        }
       } else {
-        clearInterval(pollTimer);
-        pollTimer = null;
+        disconnectSSE();
+        clearPollTimer();
       }
       updateAutoRefreshButton();
       localStorage.setItem('auto_refresh', autoRefreshEnabled);
     }
 
-    // Update auto-refresh button
     function updateAutoRefreshButton() {
       const btn = document.getElementById('auto-refresh-btn');
       if (!btn) return;
       btn.classList.toggle('active', autoRefreshEnabled);
-    }
-
-    // Get refresh interval from localStorage or config
-    function getRefreshInterval() {
-      const stored = localStorage.getItem('refresh_interval');
-      if (stored) return parseInt(stored, 10);
-      return APP_CONFIG.refreshInterval || 1500;
+      // 显示当前模式
+      const icon = btn.querySelector('.btn-icon');
+      if (icon) icon.textContent = eventSource ? '📡' : '⏱';
     }
 
     init();
